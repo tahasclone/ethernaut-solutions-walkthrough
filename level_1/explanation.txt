@@ -1,0 +1,47 @@
+Aim:
+
+The aim of this level is to find vulnerabilities in this smart contract and achieve the objectives mentioned:
+- Claim ownership of the contract
+- Withdraw balance to your wallet
+
+Step 1:
+- Click get new instance to create new instance of contract deployed by ethernaut
+- Deploy contract by paying gas fees in rinkeby test network. You can get test ether to pay gas fees by using faucets. I personally use https://faucets.chain.link/rinkeby for test eth.
+
+Step 2:
+- Open the browser console to interact with the contract, you can do this via remix as well but for this level, we can use the console
+
+Step 3 - Contract Readthrough:
+- The first step to find a vulnerability in the contract is to read through the whole contract
+- The contract creates two variables, a public mapping named contributions and a payable address named owner which is also public
+- The mapping is defined to map addresses to uints, which based on its name, we can understand that its mapping how much ether each address has contributed to this contract
+- We then see a constructor defined. A constructor function is executed only once which is when the contrac t is being deployed.
+- The constructor assigns the msg.sender ( person who is deploying the contract ) to the owner variable
+- It then maps the person deploying the contract to 1000 ether in the contributions mapping
+- Below the constructor, we see a modifier defined called onlyOwner which is being called in the withdraw function seen below. This creates a requirement that only the owner of the contract can withdraw the contributions sent by different addresses
+- The other functions in the contract are contribute, getContributions, and an unnamed function
+- The unnamed function has a requirement that if the msg.value, which is the amount of ether sent along with the contract is greater than 0 and contributions[msg.sender] is greater than zero, 
+  which means that the address calling this function, needs to have contributed to this contract before
+- If the conditions of the unnamed function are met, then it changes the owner to the address calling the function
+- This is the vulnerability we would like to take advantage of 
+- This unnamed function is the fallback function of the contract. 
+- The solidity fallback function is executed if none of the other functions match the function identifier or no data was provided with the function call. 
+  Only one unnamed function can be assigned to a contract and it is executed whenever the contract receives plain Ether without any data.
+
+Step 4 - Attack:
+- based on the defintion of a fallback function in solidity, we understand that the way to trigger it is by sending plain ether without any data
+- besides this, the fallback function has another requirement that the address calling it, should be in the contributions list with some ether sent previously.
+- We move to the console to first contribute to the contract. in the console we can type "contract.contribute({value: 1})"
+  We're sending 1 gwei here, which is the lowest possible amount we could send. This is equal to 0.000000001 Eth. Something to note is that the contribute function also has a require function with a minimum amount specified that can be sent to the contract
+- Once the transaction is sent, we can confirm this by calling the getContributions function this way "conract.getContributions(player)". player is mapped to our wallet address currently active in metamask which is connected to the rinkeby network
+- Now to trigger the fallback, we use a web3.js function called sendTransaction. This will send ether to the contract without specifying any function which will in turn lead to the fallback
+- This can be done with "contract.sendTransaction({value: 1})"
+- once the transaction has been mined, we can check who the owner of the contract is
+  we can type in "player" in the console and see the address that pops up
+  and compare this with "contract.owner()"
+  If these two are the same, this means the owner has been successfully changed
+- Now we can call "contract.withdraw()" and withdraw the balance to our wallet address
+
+Step 5 - Submit:
+- Now that both objectives have been accomplished, we can click the submit instance button
+- If you have completed both objects, the console should show you a message which states that you have completed the level
