@@ -1,0 +1,28 @@
+Aim:
+
+The aim of this level is to find vulnerabilities in this smart contract and achieve the objectives mentioned:
+- Claim ownership of the contract
+
+Step 1:
+- Click get new instance to create new instance of contract deployed by ethernaut
+- Deploy contract by paying gas fees in rinkeby test network. You can get test ether to pay gas fees by using faucets. I personally use https://faucets.chain.link/rinkeby for test eth.
+
+Step 2:
+- Open the browser console to interact with the contract, you can do this via remix as well but for this level, we can use the console
+
+Step 3 - Contract Readthrough:
+- On reading the contract, the premise of the contract seems to be similar to the previous one. 
+- Users have the option to allocate funds to the contract which are stored in the mapping allocations
+- On first inspection, everything in the contract seems fine and there doesn't seem to be an obvious vulnerability.
+- As a general practice, We check the player address and the contract address on the console with "player" and "contract.owner()"
+- The contract address shows up as 0, which is strange since the instance is deployed.
+- Thats where the vulnerability is, when checking the constructor function, it seems that there is a spelling error in the name.
+- Since the name of the function is not the same as the contract nor is it called constructor, the function is never called.
+
+Step 4 - Attack:
+- So to own the contract, we simply have to call "contract.Fal1out()" and pay the required gas fees
+- once the transaction is complete, simply check the owner of the contract and it should be the same address as the player
+
+Step 5 - Submit:
+- Now that both objectives have been accomplished, we can click the submit instance button
+- If you have completed both objects, the console should show you a message which states that you have completed the level
