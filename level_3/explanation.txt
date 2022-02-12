@@ -1,0 +1,74 @@
+Aim:
+
+The aim of this level is to find vulnerabilities in this smart contract and achieve the objectives mentioned:
+- Guess the outcome of a coin toss 10 times in a row
+
+Step 1:
+- Click get new instance to create new instance of contract deployed by ethernaut
+- Deploy contract by paying gas fees in rinkeby test network. You can get test ether to pay gas fees by using faucets. I personally use https://faucets.chain.link/rinkeby for test eth.
+
+Step 2 - Set Up:
+- While the previous two challenges could be done with the console only, this challenge requires writing a smart contract of our own.
+- For convinience purposes, we will be using remix which is an online IDE which allows us to deploy solidity smart contract to the blockchain
+- You can access Remix by opening the following URL on your browser: https://remix.ethereum.org/
+- Optionally, you can create a new workspace to keep your projects segregated
+- In the contracts folder, create a new file called coinFlipAttack.sol
+- Now that the workspace is set up, we can read through the contract to find the vulnerability
+
+Step 3 - Contract Readthrough:
+- On creation of the contract, it declares it is using Safe Math library for all unsigned intergers (uint). Safe Math is used to prevent integer overflow.
+- After this, three uint256s are declared. 
+- The first is public and called consecutiveWins. As stated in the description, the aim of this contract is to guess the outcome of a coin toss, 10 times in a row.
+  So everytime a guess comes out correctly in the flip function, it is stored in this consecutiveWins uint
+- The second is lastHash, which is unclear now but we will continue reading the contract to learn more.
+- The third is an unsigned integer called FACTOR which is a large number. We'll read ahead to find out exactly what its being used for
+- Theres an unnamed constructor function being called which executes on contract deployment, This sets consecutiveWins to 0
+- Next we see the only function in the whole contract called flip
+- It takes in a parameter of type bool called _guess. This represents the heads and tails of a coin flip.
+  Its a public function meaning it can be accessed outside the contract and it returns a bool signifying if your guess was correct or not.
+- Next an unsigned integer called blockValue is set to blockhash(block.number.sub(1)). This is the hash of the previous block. We use the previous block because the hash of the block is not known until the mining is complete.
+- Next there is a condition being checked, if the lastHash is the same as the blockValue, we are reverting the transaction.
+- If not, the next step is to give lastHash the current blockValue
+- next a uint256 is being created called coinFlip, this is calculated by dividing the blockValue with the factor. 
+  we can assume that this factor is being used to further increase randomness in the coinflip. We can this as the vulnerabililty in the contract we're trying to attack.
+- Next a bool called side is created which checks if coinFlip is equal to 1. It returns true if this condition is met else it returns false. This represents heads or tails as well.
+- Next there is a condition which checks if the guess and the result are the same, if they're the same, consecutiveWins gets increased by 1. If not, consecutiveWins is set to 0.
+
+Step 4 - Attack:
+- Now that we've read through the contract, we can find that the vulnerabililty is that the numbers used to calculate randomness can both be replicated.
+- This means that we can recreate the same scenario to know the guesses before submitting our guess
+- So along with our coinFlipAttack.sol contract, we need to create the CoinFlip.sol contract as well and copy the smart contract code shown in the ethernaut level.
+- We will need this to create a public variable of type CoinFlip so we can connect with the deployed contract we want to attack
+- Press Cntrl + S to compile the smart contract
+- There seems to be two errors while compiling the smart contract
+- The first is the solidity version which is not set correctly. To fix this, we can select solidity compiler on the left side tab.
+  Here we can change the compiler version to anything 0.6.12 as that its the latest version of 0.6 
+- The second seems to be the the SafeMath library import, The compiler cant seem to find this smart contract since the format found in ethernaut is meant for working on an IDE where we import the library.
+  we can fix this by changing the import to get the library from github instead, swap the import statement with the following: 
+  import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.0/contracts/math/SafeMath.sol";
+- Once this set up is complete, we can begin to write the coinFlipAttack contract.
+- After mentioning the solidity version with pragma solidity ^0.6.0, we import the CoinFlip.sol contract that we set up in the same folder. The import statement looks like this - "import "./coinflip.sol";"
+- Now we create the contract coinFlipAttack and create a public instance of CoinFlip called victimContract
+- We create the same uint256 FACTOR which is being used in CoinFlip.sol, this allows us to recreate the coin flipping and guess correctly
+- We create a constructor where the address of the victim contract can be passed through and assigned.
+- Now we create our own version of the flip function, In this flip function, we copy the exact same code that is used to determine the side of the coin thats flipped
+- This involves three main steps, first we have to get the block hash of the previous block and assign it to block value.
+  second, we flip the coin by dividing the blockValue by the FACTOR.
+  and lastly, we determine the side by checking if its equal to 1 or not
+- Once we've got the side of the coin, we can call the flip function of the victim contract by typing "vimctimContract.flip(side);"
+- Now we deploy the attack contract, when we do this we can go "deploy & run transactions" section in the left side tab.
+- Here we select our environment as injected Web3 with our metamask connected to the rinkeby testnet
+- We select our contract as coinFlipAttack
+- and we copy and paste the ethernaut deployed contract address in the space near the deploy button. We can get this address in the console of the ethernaut page.
+  We can type "contract.address" in the console and copy the given address.
+- Now that the attack contract is deployed with the victim contract address, we can start executing the coinflip function. We can open the contract functions in the deployed contract section below.
+  Here we can click the flip button, pay the gas fees required and wait for a confirmation from metamask.  
+- Once Metamask confirms the transaction, We can confirm if we've won by going to to console of the ethernaut page and calling consecutiveWins which is a public variable. We do this by typing "await contract.consecutiveWins()"
+- If the contract returns a Big Number with the count of 1 in the the words array, this means our attack is working
+- We can recreate this process 9 more times and check the console each time to make sure that the flips are being predicted correctly.
+- Once its flipped 10 times, we can move on to submitting the level
+
+
+Step 5 - Submit:
+- Now that both objectives have been accomplished, we can click the submit instance button
+- If you have completed both objects, the console should show you a message which states that you have completed the level
